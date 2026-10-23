@@ -1,0 +1,24 @@
+{
+  "name": "Stable Audio Open (sound effects)",
+  "kind": "audio",
+  "description": "Sound effects and ambience up to 47 s. Models: stable-audio-open-1.0 checkpoint, t5_base text encoder.",
+  "params": [
+    {"name": "prompt", "label": "Prompt", "type": "text", "default": "eerie ghostly whisper and distant moaning wind, haunted house ambience, reverb", "node": "6", "input": "text"},
+    {"name": "negative", "label": "Negative prompt", "type": "text", "default": "music, speech, low quality, noise", "node": "7", "input": "text"},
+    {"name": "seconds", "label": "Seconds", "type": "float", "default": 12, "node": "11", "input": "seconds", "also": [{"node": "12", "input": "seconds_total"}]},
+    {"name": "steps", "label": "Steps", "type": "int", "default": 50, "node": "3", "input": "steps"},
+    {"name": "cfg", "label": "CFG", "type": "float", "default": 5.0, "node": "3", "input": "cfg"},
+    {"name": "seed", "label": "Seed", "type": "seed", "default": -1, "node": "3", "input": "seed"}
+  ],
+  "workflow": {
+    "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "stable-audio-open-1.0.safetensors"}},
+    "10": {"class_type": "CLIPLoader", "inputs": {"clip_name": "t5_base.safetensors", "type": "stable_audio", "device": "default"}},
+    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["10", 0], "text": ""}},
+    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["10", 0], "text": ""}},
+    "11": {"class_type": "EmptyLatentAudio", "inputs": {"seconds": 12, "batch_size": 1}},
+    "12": {"class_type": "ConditioningStableAudio", "inputs": {"positive": ["6", 0], "negative": ["7", 0], "seconds_start": 0, "seconds_total": 12}},
+    "3": {"class_type": "KSampler", "inputs": {"model": ["4", 0], "positive": ["12", 0], "negative": ["12", 1], "latent_image": ["11", 0], "seed": 0, "steps": 50, "cfg": 5.0, "sampler_name": "dpmpp_3m_sde_gpu", "scheduler": "exponential", "denoise": 1.0}},
+    "13": {"class_type": "VAEDecodeAudio", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
+    "19": {"class_type": "SaveAudio", "inputs": {"audio": ["13", 0], "filename_prefix": "projector/stable_audio"}}
+  }
+}

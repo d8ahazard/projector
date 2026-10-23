@@ -1,0 +1,23 @@
+{
+  "name": "ACE-Step (music)",
+  "kind": "audio",
+  "description": "Songs and instrumentals from style tags and optional lyrics. Model: ace_step_v1_3.5b checkpoint.",
+  "params": [
+    {"name": "tags", "label": "Style tags", "type": "text", "default": "dark orchestral, music box, creepy, halloween, minor key, slow tempo, instrumental", "node": "14", "input": "tags"},
+    {"name": "lyrics", "label": "Lyrics ([inst] for instrumental)", "type": "text", "default": "[inst]", "node": "14", "input": "lyrics"},
+    {"name": "seconds", "label": "Seconds", "type": "float", "default": 90, "node": "17", "input": "seconds"},
+    {"name": "steps", "label": "Steps", "type": "int", "default": 50, "node": "52", "input": "steps"},
+    {"name": "cfg", "label": "CFG", "type": "float", "default": 5.0, "node": "52", "input": "cfg"},
+    {"name": "seed", "label": "Seed", "type": "seed", "default": -1, "node": "52", "input": "seed"}
+  ],
+  "workflow": {
+    "40": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "ace_step_v1_3.5b.safetensors"}},
+    "51": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["40", 0], "shift": 5.0}},
+    "14": {"class_type": "TextEncodeAceStepAudio", "inputs": {"clip": ["40", 1], "tags": "", "lyrics": "", "lyrics_strength": 0.99}},
+    "44": {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["14", 0]}},
+    "17": {"class_type": "EmptyAceStepLatentAudio", "inputs": {"seconds": 90, "batch_size": 1}},
+    "52": {"class_type": "KSampler", "inputs": {"model": ["51", 0], "positive": ["14", 0], "negative": ["44", 0], "latent_image": ["17", 0], "seed": 0, "steps": 50, "cfg": 5.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}},
+    "18": {"class_type": "VAEDecodeAudio", "inputs": {"samples": ["52", 0], "vae": ["40", 2]}},
+    "59": {"class_type": "SaveAudio", "inputs": {"audio": ["18", 0], "filename_prefix": "projector/ace_step"}}
+  }
+}

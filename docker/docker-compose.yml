@@ -1,0 +1,39 @@
+# Usage (from the repo root):
+#   docker compose -f docker/docker-compose.yml up -d --build          # server
+#   docker compose -f docker/docker-compose.yml --profile apk run --rm apk   # build APK
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # LAN IP of this PC, so players/phone get a reachable address in QR codes.
+      PROJECTOR_PUBLIC_HOST: ${PROJECTOR_PUBLIC_HOST:-}
+      PEXELS_API_KEY: ${PEXELS_API_KEY:-}
+      PIXABAY_API_KEY: ${PIXABAY_API_KEY:-}
+      FREESOUND_API_KEY: ${FREESOUND_API_KEY:-}
+      COMFY_URL: ${COMFY_URL:-}
+      PROJECTOR_PLANNER_URL: ${PROJECTOR_PLANNER_URL:-http://host.docker.internal:8081/v1}
+      PROJECTOR_PLANNER_MODEL: ${PROJECTOR_PLANNER_MODEL:-local}
+      PROJECTOR_WORK_DIR: /work
+      PROJECTOR_SOURCE_ROOT: /sources/library
+    volumes:
+      - ../data:/data
+      - ${PROJECTOR_WORK_DIR:-../data/work}:/work
+      - ${PROJECTOR_SOURCE_ROOT:-../data/source-packs}:/sources/library:ro
+    restart: unless-stopped
+
+  apk:
+    profiles: ["apk"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.apk
+    volumes:
+      - ../data/apk:/out
+      - ../data/keystore:/keystore
+      - gradle-cache:/root/.gradle
+
+volumes:
+  gradle-cache:

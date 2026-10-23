@@ -1,0 +1,29 @@
+{
+  "name": "Wan 2.1 text to video (1.3B)",
+  "kind": "video",
+  "description": "Fast text-to-video that runs on 8 GB GPUs. Models: wan2.1_t2v_1.3B_fp16, umt5_xxl_fp8_e4m3fn_scaled, wan_2.1_vae.",
+  "params": [
+    {"name": "prompt", "label": "Prompt", "type": "text", "default": "a translucent white ghost slowly drifting from left to right, flowing sheets, glowing softly, isolated on pure black background, static camera", "node": "6", "input": "text"},
+    {"name": "negative", "label": "Negative prompt", "type": "text", "default": "background scenery, room, walls, floor, text, watermark, camera movement, blurry, low quality", "node": "7", "input": "text"},
+    {"name": "width", "label": "Width", "type": "int", "default": 832, "node": "40", "input": "width"},
+    {"name": "height", "label": "Height", "type": "int", "default": 480, "node": "40", "input": "height"},
+    {"name": "frames", "label": "Frames (4n+1)", "type": "int", "default": 81, "node": "40", "input": "length"},
+    {"name": "steps", "label": "Steps", "type": "int", "default": 30, "node": "3", "input": "steps"},
+    {"name": "cfg", "label": "CFG", "type": "float", "default": 6.0, "node": "3", "input": "cfg"},
+    {"name": "seed", "label": "Seed", "type": "seed", "default": -1, "node": "3", "input": "seed"},
+    {"name": "fps", "label": "FPS", "type": "int", "default": 16, "node": "50", "input": "fps"}
+  ],
+  "workflow": {
+    "37": {"class_type": "UNETLoader", "inputs": {"unet_name": "wan2.1_t2v_1.3B_fp16.safetensors", "weight_dtype": "default"}},
+    "38": {"class_type": "CLIPLoader", "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan", "device": "default"}},
+    "39": {"class_type": "VAELoader", "inputs": {"vae_name": "wan_2.1_vae.safetensors"}},
+    "48": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["37", 0], "shift": 8.0}},
+    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["38", 0], "text": ""}},
+    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["38", 0], "text": ""}},
+    "40": {"class_type": "EmptyHunyuanLatentVideo", "inputs": {"width": 832, "height": 480, "length": 81, "batch_size": 1}},
+    "3": {"class_type": "KSampler", "inputs": {"model": ["48", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["40", 0], "seed": 0, "steps": 30, "cfg": 6.0, "sampler_name": "uni_pc", "scheduler": "simple", "denoise": 1.0}},
+    "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["39", 0]}},
+    "50": {"class_type": "CreateVideo", "inputs": {"images": ["8", 0], "fps": 16}},
+    "51": {"class_type": "SaveVideo", "inputs": {"video": ["50", 0], "filename_prefix": "projector/wan_t2v", "format": "mp4", "codec": "h264"}}
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "Wan 2.1 image to video (480p)",
+  "kind": "video",
+  "description": "Animate a still image (for example a ghost or skeleton on black). Models: wan2.1_i2v_480p_14B_fp8_e4m3fn, umt5_xxl_fp8_e4m3fn_scaled, wan_2.1_vae, clip_vision_h.",
+  "params": [
+    {"name": "image", "label": "Start image", "type": "image", "default": "", "node": "52", "input": "image"},
+    {"name": "prompt", "label": "Prompt", "type": "text", "default": "the figure slowly turns its head and raises an arm, subtle floating motion, pure black background stays black, static camera", "node": "6", "input": "text"},
+    {"name": "negative", "label": "Negative prompt", "type": "text", "default": "background change, scenery, camera movement, text, watermark, blurry, distorted", "node": "7", "input": "text"},
+    {"name": "width", "label": "Width", "type": "int", "default": 832, "node": "50", "input": "width"},
+    {"name": "height", "label": "Height", "type": "int", "default": 480, "node": "50", "input": "height"},
+    {"name": "frames", "label": "Frames (4n+1)", "type": "int", "default": 81, "node": "50", "input": "length"},
+    {"name": "steps", "label": "Steps", "type": "int", "default": 20, "node": "3", "input": "steps"},
+    {"name": "cfg", "label": "CFG", "type": "float", "default": 6.0, "node": "3", "input": "cfg"},
+    {"name": "seed", "label": "Seed", "type": "seed", "default": -1, "node": "3", "input": "seed"},
+    {"name": "fps", "label": "FPS", "type": "int", "default": 16, "node": "60", "input": "fps"}
+  ],
+  "workflow": {
+    "37": {"class_type": "UNETLoader", "inputs": {"unet_name": "wan2.1_i2v_480p_14B_fp8_e4m3fn.safetensors", "weight_dtype": "default"}},
+    "38": {"class_type": "CLIPLoader", "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan", "device": "default"}},
+    "39": {"class_type": "VAELoader", "inputs": {"vae_name": "wan_2.1_vae.safetensors"}},
+    "49": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "clip_vision_h.safetensors"}},
+    "52": {"class_type": "LoadImage", "inputs": {"image": ""}},
+    "51": {"class_type": "CLIPVisionEncode", "inputs": {"clip_vision": ["49", 0], "image": ["52", 0], "crop": "none"}},
+    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["38", 0], "text": ""}},
+    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["38", 0], "text": ""}},
+    "50": {"class_type": "WanImageToVideo", "inputs": {"positive": ["6", 0], "negative": ["7", 0], "vae": ["39", 0], "clip_vision_output": ["51", 0], "start_image": ["52", 0], "width": 832, "height": 480, "length": 81, "batch_size": 1}},
+    "54": {"class_type": "ModelSamplingSD3", "inputs": {"model": ["37", 0], "shift": 8.0}},
+    "3": {"class_type": "KSampler", "inputs": {"model": ["54", 0], "positive": ["50", 0], "negative": ["50", 1], "latent_image": ["50", 2], "seed": 0, "steps": 20, "cfg": 6.0, "sampler_name": "uni_pc", "scheduler": "simple", "denoise": 1.0}},
+    "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["39", 0]}},
+    "60": {"class_type": "CreateVideo", "inputs": {"images": ["8", 0], "fps": 16}},
+    "61": {"class_type": "SaveVideo", "inputs": {"video": ["60", 0], "filename_prefix": "projector/wan_i2v", "format": "mp4", "codec": "h264"}}
+  }
+}

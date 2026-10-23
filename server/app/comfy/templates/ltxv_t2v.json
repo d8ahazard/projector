@@ -1,0 +1,31 @@
+{
+  "name": "LTX-Video text to video",
+  "kind": "video",
+  "description": "Very fast text-to-video at 24 fps. Models: ltx-video-2b-v0.9.5 checkpoint, t5xxl_fp16 text encoder.",
+  "params": [
+    {"name": "prompt", "label": "Prompt", "type": "text", "default": "a pale ghostly woman in a flowing white gown floats slowly across the frame, hair drifting as if underwater, faint glow, isolated on pure black background, static locked-off camera", "node": "6", "input": "text"},
+    {"name": "negative", "label": "Negative prompt", "type": "text", "default": "low quality, worst quality, deformed, distorted, background, scenery, walls, text, watermark, camera shake", "node": "7", "input": "text"},
+    {"name": "width", "label": "Width", "type": "int", "default": 768, "node": "70", "input": "width"},
+    {"name": "height", "label": "Height", "type": "int", "default": 512, "node": "70", "input": "height"},
+    {"name": "frames", "label": "Frames (8n+1)", "type": "int", "default": 121, "node": "70", "input": "length"},
+    {"name": "steps", "label": "Steps", "type": "int", "default": 30, "node": "71", "input": "steps"},
+    {"name": "cfg", "label": "CFG", "type": "float", "default": 3.0, "node": "82", "input": "cfg"},
+    {"name": "seed", "label": "Seed", "type": "seed", "default": -1, "node": "72", "input": "noise_seed"}
+  ],
+  "workflow": {
+    "44": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "ltx-video-2b-v0.9.5.safetensors"}},
+    "38": {"class_type": "CLIPLoader", "inputs": {"clip_name": "t5xxl_fp16.safetensors", "type": "ltxv", "device": "default"}},
+    "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["38", 0], "text": ""}},
+    "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["38", 0], "text": ""}},
+    "69": {"class_type": "LTXVConditioning", "inputs": {"positive": ["6", 0], "negative": ["7", 0], "frame_rate": 24.0}},
+    "70": {"class_type": "EmptyLTXVLatentVideo", "inputs": {"width": 768, "height": 512, "length": 121, "batch_size": 1}},
+    "71": {"class_type": "LTXVScheduler", "inputs": {"latent": ["70", 0], "steps": 30, "max_shift": 2.05, "base_shift": 0.95, "stretch": true, "terminal": 0.1}},
+    "73": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
+    "72": {"class_type": "RandomNoise", "inputs": {"noise_seed": 0}},
+    "82": {"class_type": "CFGGuider", "inputs": {"model": ["44", 0], "positive": ["69", 0], "negative": ["69", 1], "cfg": 3.0}},
+    "13": {"class_type": "SamplerCustomAdvanced", "inputs": {"noise": ["72", 0], "guider": ["82", 0], "sampler": ["73", 0], "sigmas": ["71", 0], "latent_image": ["70", 0]}},
+    "8": {"class_type": "VAEDecode", "inputs": {"samples": ["13", 0], "vae": ["44", 2]}},
+    "50": {"class_type": "CreateVideo", "inputs": {"images": ["8", 0], "fps": 24}},
+    "51": {"class_type": "SaveVideo", "inputs": {"video": ["50", 0], "filename_prefix": "projector/ltxv", "format": "mp4", "codec": "h264"}}
+  }
+}
