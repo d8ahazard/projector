@@ -9,8 +9,8 @@ jobs:
   server:
     runs-on: ubuntu-latest
     env:
-      PROJECTOR_WORK_DIR: ${{ runner.temp }}/projector-work
-      PROJECTOR_SOURCE_ROOT: ${{ runner.temp }}/projection-packs
+      PROJECTOR_WORK_DIR: ${{ github.workspace }}/.ci-work
+      PROJECTOR_SOURCE_ROOT: ${{ github.workspace }}/.ci-source
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
