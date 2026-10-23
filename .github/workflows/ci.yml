@@ -17,6 +17,7 @@ jobs:
         with:
           python-version: "3.10"
           enable-cache: true
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - working-directory: server
         run: uv sync --locked
       - working-directory: server
@@ -44,7 +45,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
       - run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
