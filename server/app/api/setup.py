@@ -51,11 +51,15 @@ def validate_target(value: str, controller_ip: str = '') -> str:
     return str(addr)
 
 
+def automatic_provisioning_available() -> bool:
+    return os.name == 'nt'
+
+
 def check_origin(request: Request):
     origin = request.headers.get('origin')
     if origin and (urlsplit(origin).netloc != request.headers.get('host') or urlsplit(origin).scheme != request.url.scheme):
         raise HTTPException(403, 'Use this server’s controller to provision players')
-    if os.name != 'nt':
+    if not automatic_provisioning_available():
         raise HTTPException(409, 'Automatic provisioning is available on the Windows server')
 
 

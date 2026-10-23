@@ -14,6 +14,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(setup, '_tasks', {})
     monkeypatch.setattr(setup, 'ensure_adb', lambda: None)
     monkeypatch.setattr(setup.time, 'sleep', lambda _: None)
+    monkeypatch.setattr(setup, 'automatic_provisioning_available', lambda: True)
     return tmp_path
 
 

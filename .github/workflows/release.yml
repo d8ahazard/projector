@@ -46,7 +46,7 @@ jobs:
         run: uv sync --locked && uv run pytest -q
       - working-directory: web
         run: npm ci && npm run build
-      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Build signed APK
         env:
