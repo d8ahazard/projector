@@ -1,4 +1,5 @@
 from app.media.roster import build_scheduler, eligible, select_actions
+from app.media.library import classify
 from app.models import SourceFile
 
 
@@ -18,6 +19,12 @@ def test_catalog_roster_excludes_forbidden_sets_and_buffers():
     manually_excluded = source("Night Stalkers/Endless.mp4", "Night Stalkers", "n", "Endless Nightmare", "Excerpt")
     manually_excluded.overrides = {"roster_excluded": True}
     assert not eligible(manually_excluded)
+
+
+def test_catalog_classifies_promotional_and_setup_videos_as_excluded():
+    for name in ("Digital Decoration Trailer.mp4", "Projector Setup Instructions.mp4", "How-To Walkthrough.mp4"):
+        assert classify(f"AtmosFX/Window/{name}")["roster_excluded"] is True
+    assert classify("AtmosFX/Window/Ghostly Encounter.mp4")["roster_excluded"] is False
 
 
 def test_catalog_roster_deduplicates_variants_but_keeps_distinct_actions():

@@ -52,6 +52,12 @@ def classify(relative: str) -> dict:
     if parts[0].lower() == "legends of halloween":
         collection = "Legends of Halloween"
     text = relative.lower()
+    # Promotional reels and setup walkthroughs are not show material. Keep the
+    # source file untouched, but exclude it from the library and every roster.
+    roster_excluded = bool(re.search(
+        r"(?:^|[^a-z0-9])(trailer|promo|setup|installation|instructions?|tutorial|walkthrough|how[ _-]*to)(?:[^a-z0-9]|$)",
+        text,
+    ))
     tokens = re.split(r"[^a-z0-9]+", text)
     targets = []
     for name, words in {"window": ("window", "win"), "wall": ("wall",), "doorway": ("doorway", "door"), "tv": ("tv", "monitor"), "hollusion": ("hollusion", "holl", "hologram"), "prop": ("3dfx", "prop", "disc")}.items():
@@ -79,7 +85,8 @@ def classify(relative: str) -> dict:
             "content_rotation": 90 if orientation == "vertical" else 0,
             "character": character, "action": title, "season": "christmas" if re.search(r"(?i)christmas|santa|xmas", relative) else "easter" if re.search(r"(?i)easter|bunny", relative) else "halloween",
             "buffer": "buffer" in text, "confidence": 0.9 if targets else 0.3,
-            "review": not targets or orientation == "vertical" or appearance == "unknown"}
+            "review": not targets or orientation == "vertical" or appearance == "unknown",
+            "roster_excluded": roster_excluded}
 
 
 def source_path(row: SourceFile) -> Path:
@@ -195,7 +202,9 @@ def scan(jid: str):
             c = {**c, "pack_id": pack_id}
         # Threads work on detached copies, including when a caller owns a session.
         row = SourceFile(**old.model_dump()) if old else SourceFile(relative_path=relative, scene_key=c["scene_key"], title=c["title"], collection=c["collection"])
-        unchanged = old and old.size == st.st_size and old.mtime_ns == str(st.st_mtime_ns) and old.status in ("indexed", "ignored")
+        ignore_source = p.name.startswith("._") or "__MACOSX" in p.parts or c.get("roster_excluded", False)
+        unchanged = (old and old.size == st.st_size and old.mtime_ns == str(st.st_mtime_ns)
+                     and old.status == ("ignored" if ignore_source else "indexed"))
         row.classification = c
         row.scene_key, row.title, row.collection = c["scene_key"], c["title"], c["collection"]
         if not unchanged:
@@ -203,7 +212,7 @@ def scan(jid: str):
             row.asset_id = None  # previously prepared assets remain valid for saved programs
             row.size, row.mtime_ns = st.st_size, str(st.st_mtime_ns)
             row.error = ""
-            if p.name.startswith("._") or "__MACOSX" in p.parts:
+            if ignore_source:
                 row.status = "ignored"
             else:
                 try:
